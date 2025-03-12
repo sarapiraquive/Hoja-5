@@ -9,7 +9,9 @@ class Analyzer:
             :param mdp: The MDP that is being analyzed
         """
 
-        pass # your code
+        self.mdp = mdp
+        self.runs = {}
+        self.current_run = None
     
     def new_run(self, name):
         """
@@ -17,7 +19,8 @@ class Analyzer:
             
             indicates the analyzer that upcoming observations are for a new run of the policy learner
         """
-        pass # your code
+        self.current_run = name
+        self.runs[name] = []
     
     def add_state_value_estimates(self, v):
         """
@@ -25,7 +28,8 @@ class Analyzer:
             
             add the state value estimates to the history of the current run
         """
-        pass # your code
+        if self.current_run is not None:
+            self.runs[self.current_run].append(v.copy())
     
     def plot_state_value_estimates_of_init_state_over_time(self, ax=None):
         """
@@ -33,7 +37,17 @@ class Analyzer:
 
             Creates a line plot (step function) that shows one line for each run. The line value corresponds to the state value of the initial state of the MDP
         """
-        pass # your code
+        if ax is None:
+            fig, ax = plt.subplots()
+        
+        for run_name, history in self.runs.items():
+            values = [v[self.mdp.init_states[0]] for v in history]
+            ax.step(range(len(values)), values, label=run_name)
+        
+        ax.set_xlabel("Iteration t")
+        ax.set_ylabel("Value of Initial State")
+        ax.legend()
+        plt.show()
 
     def plot_avg_state_value_estimates_of_init_state_over_time(self, ax=None):
         """
@@ -41,5 +55,15 @@ class Analyzer:
 
             Creates a line plot (step function) that shows one line for each run. The line value corresponds to the average value across all states in the MDP
         """
-        pass # your code
+        if ax is None:
+            fig, ax = plt.subplots()
+        
+        for run_name, history in self.runs.items():
+            avg_values = [sum(v.values()) / len(v) for v in history]
+            ax.step(range(len(avg_values)), avg_values, label=run_name)
+        
+        ax.set_xlabel("Iteration t")
+        ax.set_ylabel("Average State Value")
+        ax.legend()
+        plt.show()
 
