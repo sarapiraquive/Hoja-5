@@ -8,11 +8,18 @@ class StandardPolicyImprover(PolicyImprover):
         """
             :param min_advantage: minimum improvement that a q-value must offer over the current state value to trigger a change in policy
         """
-        pass # your code
+        self.min_advantage = min_advantage
+        self.policy = {}
 
     def improve(self, q):
-        pass # your code
+        policy_stable = True
+        for s, actions in q.items():
+            best_action = max(actions, key=actions.get)
+            if s not in self.policy or self._policy[s] != best_action:
+                self.policy[s] = best_action
+                policy_stable = False
+        return not policy_stable
     
     @property
     def policy(self):
-        pass # your code
+        return lambda s: self._policy.get(s, None)

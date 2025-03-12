@@ -9,7 +9,12 @@ class StandardPolicyIteration(PolicyIteration):
             :param policy_evaluator: the policy evaluator
             :param policy_improver: the policy improver
         """
-        pass # your code
+        self.policy_evaluator = policy_evaluator
+        self.policy_improver = policy_improver
+        self.policy_evaluator = policy_evaluator
     
     def step(self):
-        pass # your code
+        q_values = self.policy_evaluator.q
+        improved = self.policy_improver.improve(q_values)
+        self.policy_evaluator.reset(self.policy_improver.policy)
+        return improved
