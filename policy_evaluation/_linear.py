@@ -24,15 +24,33 @@ class LinearSystemEvaluator(PolicyEvaluator):
         y = np.zeros(self.n)  # Vector de términos independientes
 
         for i, s in enumerate(self.states):
-            A[i, i] -= gamma_adj * sum(self.probs.get(s, {}).get(self.policy(s), {}).get(s_prime, 0)
-                                       for s_prime in self.states)
+
+            actions = self.mdp.get_actions_in_state(s)
+            if not actions:  # Si es un estado terminal, mantener el valor actual
+                continue
+
+            action = self.policy(s)
+            if action is None:
+                print(f"Warning: Undefined policy for state {s}.")
+                continue
+
+            # Actualizar la matriz A y el vector y
             y[i] = self.rewards[i]
+
+            # Coeficiente para s en la ecuación
+            if s in self.probs and action in self.probs[s]:
+                A[i, i] -= gamma_adj * sum(self.probs[s][action].get(s_prime, 0)
+                                         for s_prime in self.states)
+            
             for j, s_prime in enumerate(self.states):
-                A[i, j] += gamma_adj * self.probs.get(s, {}).get(self.policy(s), {}).get(s_prime, 0)
+                if s_prime in self.probs[s][action]:
+                    A[i, j] += gamma_adj * self.probs[s][action][s_prime]
 
-        v_values = np.linalg.solve(A, y)
-        self._v_values = {s: v_values[i] for i, s in enumerate(self.states)}
-
+        try: 
+            v_values = np.linalg.solve(A, y)
+            self._v_values = {s: v_values[i] for i, s in enumerate(self.states)}
+        except np.linalg.LinAlgError as e:
+            print(f"Error solving: {e}")
 
     @property
     def provides_state_values(self):
@@ -49,10 +67,14 @@ class LinearSystemEvaluator(PolicyEvaluator):
         """
         q_values = {}
         for s in self.states:
+            actions = self.mdp.get_actions_in_state(s)
+            if not actions:  # Si es un estado terminal, no tendrá valores Q
+                continue
             q_values[s] = {}
-            for a in self.mdp.get_actions_in_state(s):
-                q_values[s][a] = self.rewards[self.states.index(s)] + self.gamma * sum(
-                    self.probs[s][a].get(s_prime, 0) * self._v_values[s_prime] for s_prime in self.states
-                )
+            for a in actions:
+                if s in self.probs and a in self.probs[s]:
+                    q_values[s][a] = self.rewards[self.states.index(s)] + self.gamma * sum(
+                        self.probs[s][a].get(s_prime, 0) * self._v_values.get(s_prime, 0) for s_prime in self.states
+                    )
         return q_values
 
